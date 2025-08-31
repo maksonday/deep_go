@@ -169,7 +169,6 @@ func TestCOWBuffer(t *testing.T) {
 	current = copy3.data
 
 	// Проверяем, что копия была создана
-	copy3Ptr = unsafe.SliceData(copy3.data)
 	assert.Equal(t, unsafe.SliceData(previous), unsafe.SliceData(current))
 	assert.True(t, reflect.DeepEqual([]byte{'a', 'x', 'y', 'z'}, copy3.data))
 	assert.True(t, reflect.DeepEqual([]byte{'a', 'x', 'y', 'd'}, copy4.data))
