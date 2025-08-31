@@ -9,32 +9,112 @@ import (
 
 // go test -v homework_test.go
 
+type Node struct {
+	key, value  int
+	left, right *Node
+}
+
 type OrderedMap struct {
-	// need to implement
+	root *Node
+	size int
 }
 
 func NewOrderedMap() OrderedMap {
-	return OrderedMap{} // need to implement
+	return OrderedMap{}
+}
+
+func (m *OrderedMap) insert(node **Node, key, value int) {
+	switch {
+	case node == nil || (*node) == nil:
+		*node = &Node{key: key, value: value}
+		m.size++
+	case key < (*node).key:
+		m.insert(&(*node).left, key, value)
+	case key > (*node).key:
+		m.insert(&(*node).right, key, value)
+	default:
+		(*node).value = value
+	}
 }
 
 func (m *OrderedMap) Insert(key, value int) {
-	// need to implement
+	m.insert(&m.root, key, value)
+}
+
+func (m *OrderedMap) erase(node **Node, key int) {
+	switch {
+	case node == nil || (*node) == nil:
+		return
+	case key < (*node).key:
+		m.erase(&(*node).left, key)
+	case key > (*node).key:
+		m.erase(&(*node).right, key)
+	default:
+		m.size--
+		left := (*node).left
+		right := (*node).right
+
+		if right != nil {
+			// find min in right
+			for right.left != nil {
+				right = right.left
+			}
+			(*node).key = right.key
+			(*node).value = right.value
+			(*node).right = right.right
+			return
+		}
+
+		if left != nil {
+			// replace current node with left node
+			(*node).key = left.key
+			(*node).value = left.value
+			(*node).left = left.left
+			(*node).right = left.right
+			return
+		}
+
+		*node = nil
+	}
 }
 
 func (m *OrderedMap) Erase(key int) {
-	// need to implement
+	m.erase(&m.root, key)
+}
+
+func findNode(node *Node, key int) *Node {
+	switch {
+	case node == nil:
+		return nil
+	case key < node.key:
+		return findNode(node.left, key)
+	case key > node.key:
+		return findNode(node.right, key)
+	default:
+		return node
+	}
 }
 
 func (m *OrderedMap) Contains(key int) bool {
-	return false // need to implement
+	return findNode(m.root, key) != nil
 }
 
 func (m *OrderedMap) Size() int {
-	return 0 // need to implement
+	return m.size
+}
+
+func forEach(node *Node, action func(int, int)) {
+	if node == nil {
+		return
+	}
+
+	forEach(node.left, action)
+	action(node.key, node.value)
+	forEach(node.right, action)
 }
 
 func (m *OrderedMap) ForEach(action func(int, int)) {
-	// need to implement
+	forEach(m.root, action)
 }
 
 func TestCircularQueue(t *testing.T) {
