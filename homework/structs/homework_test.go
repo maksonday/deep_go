@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"math"
 	"testing"
 	"unsafe"
@@ -19,18 +18,9 @@ func WithName(name string) func(*GamePerson) {
 
 func WithCoordinates(x, y, z int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		binary.BigEndian.PutUint32(person.x[:], uint32(x))
-		if x < 0 {
-			person.x[0] |= 0b10000000
-		}
-		binary.BigEndian.PutUint32(person.y[:], uint32(y))
-		if y < 0 {
-			person.y[0] |= 0b10000000
-		}
-		binary.BigEndian.PutUint32(person.z[:], uint32(z))
-		if z < 0 {
-			person.z[0] |= 0b10000000
-		}
+		person.x = int32(x)
+		person.y = int32(y)
+		person.z = int32(z)
 	}
 }
 
@@ -65,7 +55,7 @@ func (p *GamePerson) getValue(offset int, length int) int {
 
 func WithGold(gold int) func(*GamePerson) {
 	return func(person *GamePerson) {
-		binary.BigEndian.PutUint32(person.gold[:], uint32(gold))
+		person.gold = uint32(gold)
 	}
 }
 
@@ -136,12 +126,10 @@ const (
 )
 
 type GamePerson struct {
-	name [42]byte
-	x    [4]byte // 46
-	y    [4]byte // 50
-	z    [4]byte // 54
-	gold [4]byte // 58
-	mask [6]byte
+	x, y, z int32
+	gold    uint32
+	name    [42]byte
+	mask    [6]byte
 	/*
 		mp  0 - 1000 =>  10 bits
 		hp  0 - 1000 =>  10 bits
@@ -178,28 +166,19 @@ func (p *GamePerson) Name() string {
 }
 
 func (p *GamePerson) X() int {
-	if p.x[0]>>7 == 1 {
-		return -int(binary.BigEndian.Uint32([]byte{p.x[0] &^ 0b01111111, p.x[1], p.x[2], p.x[3]}))
-	}
-	return int(binary.BigEndian.Uint32(p.x[:]))
+	return int(p.x)
 }
 
 func (p *GamePerson) Y() int {
-	if p.y[0]>>7 == 1 {
-		return -int(binary.BigEndian.Uint32([]byte{p.y[0] &^ 0b01111111, p.y[1], p.y[2], p.y[3]}))
-	}
-	return int(binary.BigEndian.Uint32(p.y[:]))
+	return int(p.y)
 }
 
 func (p *GamePerson) Z() int {
-	if p.z[0]>>7 == 1 {
-		return -int(binary.BigEndian.Uint32([]byte{p.z[0] &^ 0b01111111, p.z[1], p.z[2], p.z[3]}))
-	}
-	return int(binary.BigEndian.Uint32(p.z[:]))
+	return int(p.z)
 }
 
 func (p *GamePerson) Gold() int {
-	return int(binary.BigEndian.Uint32(p.gold[:]))
+	return int(p.gold)
 }
 
 func (p *GamePerson) Mana() int {
