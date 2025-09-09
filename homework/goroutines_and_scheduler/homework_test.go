@@ -1,6 +1,8 @@
 package main
 
 import (
+	"container/heap"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,26 +13,62 @@ type Task struct {
 	Priority   int
 }
 
+type TaskQueue struct {
+	queue []Task
+	mu    sync.Mutex
+}
+
+func (t *TaskQueue) Len() int           { return len(t.queue) }
+func (t *TaskQueue) Less(i, j int) bool { return t.queue[i].Priority >= t.queue[j].Priority }
+func (t *TaskQueue) Swap(i, j int)      { t.queue[i], t.queue[j] = t.queue[j], t.queue[i] }
+
+func (t *TaskQueue) Push(x any) {
+
+	t.queue = append(t.queue, x.(Task))
+}
+
+func (t *TaskQueue) Pop() any {
+	old := t.queue
+	n := len(old)
+	x := old[n-1]
+	t.queue = old[:n-1]
+
+	return x
+}
+
 type Scheduler struct {
-	// need to implement
+	queue *TaskQueue
 }
 
 func NewScheduler() Scheduler {
-	// need to implement
-	return Scheduler{}
+	queue := TaskQueue{queue: []Task{}}
+	heap.Init(&queue)
+
+	return Scheduler{
+		queue: &queue,
+	}
 }
 
 func (s *Scheduler) AddTask(task Task) {
-	// need to implement
+	s.queue.mu.Lock()
+	defer s.queue.mu.Unlock()
+	heap.Push(s.queue, task)
 }
 
 func (s *Scheduler) ChangeTaskPriority(taskID int, newPriority int) {
-	// need to implement
+	for i := range s.queue.Len() {
+		if s.queue.queue[i].Identifier == taskID {
+			s.queue.queue[i].Priority = newPriority
+			heap.Fix(s.queue, i)
+			break
+		}
+	}
 }
 
 func (s *Scheduler) GetTask() Task {
-	// need to implement
-	return Task{}
+	s.queue.mu.Lock()
+	defer s.queue.mu.Unlock()
+	return heap.Pop(s.queue).(Task)
 }
 
 func TestTrace(t *testing.T) {
@@ -54,6 +92,8 @@ func TestTrace(t *testing.T) {
 	assert.Equal(t, task4, task)
 
 	scheduler.ChangeTaskPriority(1, 100)
+
+	task1.Priority = 100
 
 	task = scheduler.GetTask()
 	assert.Equal(t, task1, task)
